@@ -1,4 +1,4 @@
-package dev.nativeshell.engine_context;
+package dev.nativeshell.flutter_engine_context;
 
 import android.app.Activity;
 
