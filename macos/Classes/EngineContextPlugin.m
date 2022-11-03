@@ -51,7 +51,7 @@ static int64_t nextHandle = 1;
   });
 
   FlutterMethodChannel *channel = [FlutterMethodChannel
-      methodChannelWithName:@"dev.nativeshell.engine_context"
+      methodChannelWithName:@"dev.nativeshell.flutter_engine_context"
             binaryMessenger:[registrar messenger]];
   [registrar addMethodCallDelegate:instance channel:channel];
 }

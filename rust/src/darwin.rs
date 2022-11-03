@@ -7,11 +7,9 @@ use crate::PhantomUnsync;
 
 pub type FlutterEngineContextError = Infallible;
 
-pub type FlutterEngineContextResult<T> = Result<T, FlutterEngineContextError>;
-
 pub struct FlutterEngineContext {
     _unsync: PhantomUnsync,
-    _unsend: PhantomUnsync,
+    _unsend: PhantomUnsend,
 }
 
 impl FlutterEngineContext {

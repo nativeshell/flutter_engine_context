@@ -1,9 +1,13 @@
 #![allow(clippy::new_without_default)]
 
-use std::{marker::PhantomData, cell::Cell, sync::MutexGuard};
+use std::{cell::Cell, marker::PhantomData, sync::MutexGuard};
 
 #[cfg(target_os = "android")]
 #[path = "android.rs"]
+pub mod platform;
+
+#[cfg(target_os = "windows")]
+#[path = "windows.rs"]
 pub mod platform;
 
 #[cfg(any(target_os = "ios", target_os = "macos"))]
@@ -11,7 +15,8 @@ pub mod platform;
 pub mod platform;
 
 pub type FlutterEngineContextError = platform::FlutterEngineContextError;
-pub type FlutterEngineContextResult<T> = platform::FlutterEngineContextResult<T>;
+pub type FlutterEngineContextResult<T> = Result<T, FlutterEngineContextError>;
+
 pub type FlutterEngineContext = platform::FlutterEngineContext;
 
 pub(crate) type PhantomUnsync = PhantomData<Cell<()>>;

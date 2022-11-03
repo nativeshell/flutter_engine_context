@@ -36,7 +36,7 @@ public class FlutterEngineContextPlugin implements FlutterPlugin, MethodCallHand
   public void onAttachedToEngine(@NonNull FlutterPluginBinding flutterPluginBinding) {
     handle = registry.registerPlugin(this);
     this.flutterPluginBinding = flutterPluginBinding;
-    channel = new MethodChannel(flutterPluginBinding.getBinaryMessenger(), "dev.nativeshell.engine_context");
+    channel = new MethodChannel(flutterPluginBinding.getBinaryMessenger(), "dev.nativeshell.flutter_engine_context");
     channel.setMethodCallHandler(this);
   }
 
