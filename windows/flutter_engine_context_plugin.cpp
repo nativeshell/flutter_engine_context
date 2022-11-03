@@ -82,7 +82,9 @@ void FlutterEngineContextPlugin::RegisterWithRegistrar(
 FlutterEngineContextPlugin::FlutterEngineContextPlugin(int64_t engine_handle)
     : engine_handle_(engine_handle) {}
 
-FlutterEngineContextPlugin::~FlutterEngineContextPlugin() {}
+FlutterEngineContextPlugin::~FlutterEngineContextPlugin() {
+  contexts.erase(engine_handle_);
+}
 
 void FlutterEngineContextPlugin::HandleMethodCall(
     const flutter::MethodCall<flutter::EncodableValue> &method_call,
