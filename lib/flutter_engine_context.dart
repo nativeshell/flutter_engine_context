@@ -3,12 +3,12 @@ import 'package:flutter/services.dart';
 class FlutterEngineContext {
   static final instance = FlutterEngineContext();
 
-  final methodChannel =
+  final _methodChannel =
       const MethodChannel('dev.nativeshell.flutter_engine_context');
 
-  static int? _engineHandle;
+  int? _engineHandle;
   Future<int> getEngineHandle() async {
-    _engineHandle ??= await methodChannel.invokeMethod<int>('getEngineHandle');
+    _engineHandle ??= await _methodChannel.invokeMethod<int>('getEngineHandle');
     return _engineHandle!;
   }
 }
