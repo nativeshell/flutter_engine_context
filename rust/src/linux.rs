@@ -1,19 +1,28 @@
 use std::{
-    convert::Infallible,
     ffi::{c_void, CString},
-    marker::PhantomData,
+    fmt::Display,
     mem::transmute,
     os::raw::{c_char, c_int},
 };
 
-use crate::{FlutterEngineContextResult, PhantomUnsend, PhantomUnsync};
+use crate::FlutterEngineContextResult;
 
-pub type FlutterEngineContextError = Infallible;
+pub struct PlatformContext {}
 
-pub struct FlutterEngineContext {
-    _unsync: PhantomUnsync,
-    _unsend: PhantomUnsend,
+#[derive(Debug)]
+pub enum Error {
+    InvalidHandle,
 }
+
+impl Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Error::InvalidHandle => write!(f, "invalid engine handle"),
+        }
+    }
+}
+
+impl std::error::Error for Error {}
 
 const RTLD_LAZY: c_int = 1;
 
@@ -22,19 +31,20 @@ extern "C" {
     fn dlsym(handle: *mut c_void, symbol: *const c_char) -> *mut c_void;
 }
 
-pub type FlView = *mut c_void;
-pub type FlTextureRegistrar = *mut c_void;
-pub type FlBinaryMessenger = *mut c_void;
+pub(crate) type FlutterView = FlView;
+pub(crate) type FlutterTextureRegistry = FlTextureRegistrar;
+pub(crate) type FlutterBinaryMessenger = FlBinaryMessenger;
+
+type FlView = *mut c_void;
+type FlTextureRegistrar = *mut c_void;
+type FlBinaryMessenger = *mut c_void;
 type GetFlutterViewProc = unsafe extern "C" fn(i64) -> FlView;
 type GetFlutterTextureRegistrarProc = unsafe extern "C" fn(i64) -> FlTextureRegistrar;
 type GetFlutterBinaryMessengerProc = unsafe extern "C" fn(i64) -> FlBinaryMessenger;
 
-impl FlutterEngineContext {
+impl PlatformContext {
     pub fn new() -> Self {
-        Self {
-            _unsync: PhantomData,
-            _unsend: PhantomData,
-        }
+        Self {}
     }
 
     fn get_proc(name: &str) -> *mut c_void {
@@ -47,7 +57,12 @@ impl FlutterEngineContext {
     pub fn get_flutter_view(&self, handle: i64) -> FlutterEngineContextResult<FlView> {
         let proc = Self::get_proc("FlutterEngineContextGetFlutterView");
         let proc: GetFlutterViewProc = unsafe { transmute(proc) };
-        Ok(unsafe { proc(handle) })
+        let view = unsafe { proc(handle) };
+        if view.is_null() {
+            Err(Error::InvalidHandle)
+        } else {
+            Ok(view)
+        }
     }
 
     pub fn get_binary_messenger(
@@ -56,7 +71,12 @@ impl FlutterEngineContext {
     ) -> FlutterEngineContextResult<FlBinaryMessenger> {
         let proc = Self::get_proc("FlutterEngineContextGetBinaryMessenger");
         let proc: GetFlutterBinaryMessengerProc = unsafe { transmute(proc) };
-        Ok(unsafe { proc(handle) })
+        let messenger = unsafe { proc(handle) };
+        if messenger.is_null() {
+            Err(Error::InvalidHandle)
+        } else {
+            Ok(messenger)
+        }
     }
 
     pub fn get_texture_registry(
@@ -65,6 +85,11 @@ impl FlutterEngineContext {
     ) -> FlutterEngineContextResult<FlTextureRegistrar> {
         let proc = Self::get_proc("FlutterEngineContextGetTextureRegistrar");
         let proc: GetFlutterTextureRegistrarProc = unsafe { transmute(proc) };
-        Ok(unsafe { proc(handle) })
+        let registry = unsafe { proc(handle) };
+        if registry.is_null() {
+            Err(Error::InvalidHandle)
+        } else {
+            Ok(registry)
+        }
     }
 }
