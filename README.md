@@ -1,15 +1,28 @@
-# engine_context
+# flutter_engine_context
 
-A new Flutter plugin project.
+Flutter plugin that provides access to Flutter engine components (like view or texture registrar) from native code.
 
-## Getting Started
+## Example
 
-This project is a starting point for a Flutter
-[plug-in package](https://flutter.dev/developing-packages/),
-a specialized package that includes platform-specific implementation code for
-Android and/or iOS.
+Dart code:
+```dart
+    final handle = await FlutterEngineContext.instance.getEngineHandle();
+    // pass the handle native code (i.e. through FFI).
+    nativeMethod(handle);
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://flutter.dev/docs), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Rust code:
+```rust
+    let context = FlutterEngineContext::new();
+    let flutter_view = context.get_flutter_view(handle);
+    let texture_registry = contet.get_texture_registry(handle);
+```
 
+Rust code for Android:
+```rust
+    let context = FlutterEngineContext::new(&jni_env, class_loader);
+    let flutter_view = context.get_flutter_view(handle);
+    let texture_registry = contet.get_texture_registry(handle);
+```
+
+On Android the `FlutterEngineContext` needs to be initialized with JNI environment and class loader used to load Flutter plugin (or application code).

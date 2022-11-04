@@ -1,4 +1,4 @@
 {
     // "rust-analyzer.cargo.target": "aarch64-apple-ios",
-    "rust-analyzer.cargo.target": "aarch64-linux-android",
+    // "rust-analyzer.cargo.target": "aarch64-linux-android",
 }

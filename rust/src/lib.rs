@@ -38,6 +38,8 @@ pub struct FlutterEngineContext {
 
 impl FlutterEngineContext {
     #[cfg(not(target_os = "android"))]
+    /// Creates new FlutterEngineContext instance.
+    /// Must be called on platform thread.
     pub fn new() -> Self {
         Self {
             platform_context: platform::PlatformContext::new(),
@@ -47,6 +49,8 @@ impl FlutterEngineContext {
     }
 
     #[cfg(target_os = "android")]
+    /// Creates new FlutterEngineContext instance.
+    /// Must be called on platform thread.
     pub fn new(
         env: &jni::JNIEnv,
         class_loader: jni::objects::JObject,
@@ -58,6 +62,7 @@ impl FlutterEngineContext {
         })
     }
 
+    /// Returns flutter view for given engine handle.
     pub fn get_flutter_view(
         &self,
         handle: i64,
@@ -65,6 +70,7 @@ impl FlutterEngineContext {
         self.platform_context.get_flutter_view(handle)
     }
 
+    /// Returns texture registry for given engine handle.
     pub fn get_texture_registry(
         &self,
         handle: i64,
@@ -72,6 +78,7 @@ impl FlutterEngineContext {
         self.platform_context.get_texture_registry(handle)
     }
 
+    /// Returns binary messenger for given engine handle.
     pub fn get_binary_messenger(
         &self,
         handle: i64,
@@ -79,6 +86,7 @@ impl FlutterEngineContext {
         self.platform_context.get_binary_messenger(handle)
     }
 
+    /// Returns android activity for given handle.
     #[cfg(target_os = "android")]
     pub fn get_activity(&self, handle: i64) -> FlutterEngineContextResult<Activity> {
         self.platform_context.get_activity(handle)
