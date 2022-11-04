@@ -54,8 +54,7 @@ impl PlatformContext {
         let module_name = CString::new("flutter_engine_context_plugin.dll").unwrap();
         let module = unsafe { GetModuleHandleA(module_name.as_ptr()) };
         let proc_name = CString::new(name).unwrap();
-        let proc = unsafe { GetProcAddress(module, proc_name.as_ptr()) };
-        proc
+        unsafe { GetProcAddress(module, proc_name.as_ptr()) }
     }
 
     pub fn get_flutter_view(&self, handle: i64) -> FlutterEngineContextResult<HWND> {
