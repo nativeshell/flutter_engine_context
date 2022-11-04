@@ -18,10 +18,69 @@ pub mod platform;
 #[path = "darwin.rs"]
 pub mod platform;
 
-pub type FlutterEngineContextError = platform::FlutterEngineContextError;
+pub type FlutterEngineContextError = platform::Error;
 pub type FlutterEngineContextResult<T> = Result<T, FlutterEngineContextError>;
 
-pub type FlutterEngineContext = platform::FlutterEngineContext;
+pub type FlutterView = platform::FlutterView;
+pub type FlutterTextureRegistry = platform::FlutterTextureRegistry;
+pub type FlutterBinaryMessenger = platform::FlutterBinaryMessenger;
+#[cfg(target_os = "android")]
+pub type Activity = platform::Activity;
 
-pub(crate) type PhantomUnsync = PhantomData<Cell<()>>;
-pub(crate) type PhantomUnsend = PhantomData<MutexGuard<'static, ()>>;
+type PhantomUnsync = PhantomData<Cell<()>>;
+type PhantomUnsend = PhantomData<MutexGuard<'static, ()>>;
+
+pub struct FlutterEngineContext {
+    platform_context: platform::PlatformContext,
+    _unsync: PhantomUnsync,
+    _unsend: PhantomUnsend,
+}
+
+impl FlutterEngineContext {
+    #[cfg(not(target_os = "android"))]
+    pub fn new() -> Self {
+        Self {
+            platform_context: platform::PlatformContext::new(),
+            _unsync: PhantomData,
+            _unsend: PhantomData,
+        }
+    }
+
+    #[cfg(target_os = "android")]
+    pub fn new(
+        env: &jni::JNIEnv,
+        class_loader: jni::objects::JObject,
+    ) -> FlutterEngineContextResult<Self> {
+        Ok(Self {
+            platform_context: platform::PlatformContext::new(env, class_loader)?,
+            _unsync: PhantomData,
+            _unsend: PhantomData,
+        })
+    }
+
+    pub fn get_flutter_view(
+        &self,
+        handle: i64,
+    ) -> FlutterEngineContextResult<platform::FlutterView> {
+        self.platform_context.get_flutter_view(handle)
+    }
+
+    pub fn get_texture_registry(
+        &self,
+        handle: i64,
+    ) -> FlutterEngineContextResult<FlutterTextureRegistry> {
+        self.platform_context.get_texture_registry(handle)
+    }
+
+    pub fn get_binary_messenger(
+        &self,
+        handle: i64,
+    ) -> FlutterEngineContextResult<FlutterBinaryMessenger> {
+        self.platform_context.get_binary_messenger(handle)
+    }
+
+    #[cfg(target_os = "android")]
+    pub fn get_activity(&self, handle: i64) -> FlutterEngineContextResult<Activity> {
+        self.platform_context.get_activity(handle)
+    }
+}

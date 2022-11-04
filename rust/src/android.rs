@@ -1,42 +1,43 @@
-use std::{fmt::Display, marker::PhantomData};
+use std::fmt::Display;
 
-use jni::sys::jint;
+use jni::{objects::JObject, sys::jint};
 
-use crate::{PhantomUnsend, PhantomUnsync};
+use crate::FlutterEngineContextResult;
 
-pub struct FlutterEngineContext {
+pub(crate) struct PlatformContext {
     java_vm: jni::JavaVM,
     class_loader: jni::objects::GlobalRef,
-    _unsync: PhantomUnsync,
-    _unsend: PhantomUnsend,
 }
 
 #[derive(Debug)]
-pub enum FlutterEngineContextError {
-    InvalidId,
+pub enum Error {
+    InvalidHandle,
     JNIError(jni::errors::Error),
 }
 
-pub type FlutterEngineContextResult<T> = Result<T, FlutterEngineContextError>;
+pub(crate) type FlutterView = jni::objects::GlobalRef;
+pub(crate) type FlutterTextureRegistry = jni::objects::GlobalRef;
+pub(crate) type FlutterBinaryMessenger = jni::objects::GlobalRef;
+pub(crate) type Activity = jni::objects::GlobalRef;
 
-impl Display for FlutterEngineContextError {
+impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            FlutterEngineContextError::JNIError(e) => e.fmt(f),
-            FlutterEngineContextError::InvalidId => write!(f, "invalid engine id"),
+            Error::JNIError(e) => e.fmt(f),
+            Error::InvalidHandle => write!(f, "invalid engine handle"),
         }
     }
 }
 
-impl std::error::Error for FlutterEngineContextError {}
+impl std::error::Error for Error {}
 
-impl From<jni::errors::Error> for FlutterEngineContextError {
+impl From<jni::errors::Error> for Error {
     fn from(err: jni::errors::Error) -> Self {
-        FlutterEngineContextError::JNIError(err)
+        Error::JNIError(err)
     }
 }
 
-impl FlutterEngineContext {
+impl PlatformContext {
     pub fn new(
         env: &jni::JNIEnv,
         class_loader: jni::objects::JObject,
@@ -46,8 +47,6 @@ impl FlutterEngineContext {
         Ok(Self {
             java_vm,
             class_loader,
-            _unsync: PhantomData,
-            _unsend: PhantomData,
         })
     }
 
@@ -70,13 +69,11 @@ impl FlutterEngineContext {
         Ok(plugin_class.into())
     }
 
-    pub fn get_activity(&self, handle: i64) -> FlutterEngineContextResult<jni::objects::GlobalRef> {
-        let id: jint = handle
-            .try_into()
-            .map_err(|_| FlutterEngineContextError::InvalidId)?;
+    pub fn get_activity(&self, handle: i64) -> FlutterEngineContextResult<Activity> {
+        let id: jint = handle.try_into().map_err(|_| Error::InvalidHandle)?;
         let env = self.java_vm.get_env()?;
         let class = self.get_plugin_class(&env)?;
-        let view = env
+        let activity = env
             .call_static_method(
                 class,
                 "getActivity",
@@ -84,16 +81,15 @@ impl FlutterEngineContext {
                 &[id.into()],
             )?
             .l()?;
-        Ok(env.new_global_ref(view)?)
+        if env.is_same_object(activity, JObject::null())? {
+            Err(Error::InvalidHandle)
+        } else {
+            Ok(env.new_global_ref(activity)?)
+        }
     }
 
-    pub fn get_flutter_view(
-        &self,
-        handle: i64,
-    ) -> FlutterEngineContextResult<jni::objects::GlobalRef> {
-        let id: jint = handle
-            .try_into()
-            .map_err(|_| FlutterEngineContextError::InvalidId)?;
+    pub fn get_flutter_view(&self, handle: i64) -> FlutterEngineContextResult<FlutterView> {
+        let id: jint = handle.try_into().map_err(|_| Error::InvalidHandle)?;
         let env = self.java_vm.get_env()?;
         let class = self.get_plugin_class(&env)?;
         let view = env
@@ -104,19 +100,21 @@ impl FlutterEngineContext {
                 &[id.into()],
             )?
             .l()?;
-        Ok(env.new_global_ref(view)?)
+        if env.is_same_object(view, JObject::null())? {
+            Err(Error::InvalidHandle)
+        } else {
+            Ok(env.new_global_ref(view)?)
+        }
     }
 
     pub fn get_binary_messenger(
         &self,
         handle: i64,
-    ) -> FlutterEngineContextResult<jni::objects::GlobalRef> {
-        let id: jint = handle
-            .try_into()
-            .map_err(|_| FlutterEngineContextError::InvalidId)?;
+    ) -> FlutterEngineContextResult<FlutterBinaryMessenger> {
+        let id: jint = handle.try_into().map_err(|_| Error::InvalidHandle)?;
         let env = self.java_vm.get_env()?;
         let class = self.get_plugin_class(&env)?;
-        let view = env
+        let messenger = env
             .call_static_method(
                 class,
                 "getBinaryMessenger",
@@ -124,19 +122,21 @@ impl FlutterEngineContext {
                 &[id.into()],
             )?
             .l()?;
-        Ok(env.new_global_ref(view)?)
+        if env.is_same_object(messenger, JObject::null())? {
+            Err(Error::InvalidHandle)
+        } else {
+            Ok(env.new_global_ref(messenger)?)
+        }
     }
 
     pub fn get_texture_registry(
         &self,
         handle: i64,
-    ) -> FlutterEngineContextResult<jni::objects::GlobalRef> {
-        let id: jint = handle
-            .try_into()
-            .map_err(|_| FlutterEngineContextError::InvalidId)?;
+    ) -> FlutterEngineContextResult<FlutterTextureRegistry> {
+        let id: jint = handle.try_into().map_err(|_| Error::InvalidHandle)?;
         let env = self.java_vm.get_env()?;
         let class = self.get_plugin_class(&env)?;
-        let view = env
+        let registry = env
             .call_static_method(
                 class,
                 "getTextureRegistry",
@@ -144,6 +144,10 @@ impl FlutterEngineContext {
                 &[id.into()],
             )?
             .l()?;
-        Ok(env.new_global_ref(view)?)
+        if env.is_same_object(registry, JObject::null())? {
+            Err(Error::InvalidHandle)
+        } else {
+            Ok(env.new_global_ref(registry)?)
+        }
     }
 }

@@ -1,49 +1,78 @@
-use std::{convert::Infallible, marker::PhantomData};
+use std::fmt::Display;
 
-use cocoa::base::id;
+use cocoa::base::{id, nil};
 use objc::{class, msg_send, sel, sel_impl};
 
-use crate::PhantomUnsync;
+use crate::FlutterEngineContextResult;
 
-pub type FlutterEngineContextError = Infallible;
+pub(crate) struct PlatformContext {}
 
-pub struct FlutterEngineContext {
-    _unsync: PhantomUnsync,
-    _unsend: PhantomUnsend,
+#[derive(Debug)]
+pub enum Error {
+    InvalidHandle,
 }
 
-impl FlutterEngineContext {
-    pub fn new() -> Self {
-        Self {
-            _unsync: PhantomData,
-            _unsend: PhantomData,
+pub(crate) type FlutterView = id;
+pub(crate) type FlutterTextureRegistry = id;
+pub(crate) type FlutterBinaryMessenger = id;
+
+impl Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Error::InvalidHandle => write!(f, "invalid engine handle"),
         }
     }
+}
 
-    pub fn get_flutter_view(&self, handle: i64) -> FlutterEngineContextResult<id> {
+impl std::error::Error for Error {}
+
+impl PlatformContext {
+    pub fn new() -> Self {
+        Self {}
+    }
+
+    pub fn get_flutter_view(&self, handle: i64) -> FlutterEngineContextResult<FlutterView> {
         unsafe {
             let view: id = msg_send![class!(FlutterEngineContextPlugin), getFlutterView: handle];
-            Ok(view)
+            if view == nil {
+                Err(Error::InvalidHandle)
+            } else {
+                Ok(view)
+            }
         }
     }
 
-    pub fn get_texture_registry(&self, handle: i64) -> FlutterEngineContextResult<id> {
+    pub fn get_texture_registry(
+        &self,
+        handle: i64,
+    ) -> FlutterEngineContextResult<FlutterTextureRegistry> {
         unsafe {
-            let view: id = msg_send![
+            let registry: id = msg_send![
                 class!(FlutterEngineContextPlugin),
                 getTextureRegistry: handle
             ];
-            Ok(view)
+            if registry == nil {
+                Err(Error::InvalidHandle)
+            } else {
+                Ok(registry)
+            }
         }
     }
 
-    pub fn get_binary_messenger(&self, handle: i64) -> FlutterEngineContextResult<id> {
+    pub fn get_binary_messenger(
+        &self,
+        handle: i64,
+    ) -> FlutterEngineContextResult<FlutterBinaryMessenger> {
         unsafe {
-            let view: id = msg_send![
+            let messenger: id = msg_send![
                 class!(FlutterEngineContextPlugin),
                 getBinaryMessenger: handle
             ];
-            Ok(view)
+            if messenger == nil {
+                Err(Error::InvalidHandle)
+            } else {
+                Ok(messenger)
+            }
         }
     }
 }
