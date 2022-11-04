@@ -50,8 +50,7 @@ impl PlatformContext {
     fn get_proc(name: &str) -> *mut c_void {
         let dl = unsafe { dlopen(std::ptr::null_mut(), RTLD_LAZY) };
         let name = CString::new(name).unwrap();
-        let proc = unsafe { dlsym(dl, name.as_ptr()) };
-        proc
+        unsafe { dlsym(dl, name.as_ptr()) }
     }
 
     pub fn get_flutter_view(&self, handle: i64) -> FlutterEngineContextResult<FlView> {
