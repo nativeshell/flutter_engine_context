@@ -1,5 +1,5 @@
 name: flutter_engine_context
-description: A new Flutter plugin project.
+description: Easy access to FlutterView, FlutterBinaryMessenger and FlutterTextureRegistry for FFI.
 version: 0.1.0
 homepage: https://github.com/nativeshell/flutter_engine_context
 
