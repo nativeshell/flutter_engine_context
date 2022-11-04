@@ -1,22 +1,32 @@
 use std::{
-    convert::Infallible,
     ffi::{c_void, CString},
-    marker::PhantomData,
+    fmt::Display,
     mem::transmute,
 };
 
-use crate::{FlutterEngineContextResult, PhantomUnsend, PhantomUnsync};
+use crate::FlutterEngineContextResult;
 
-pub type FlutterEngineContextError = Infallible;
-
-pub struct FlutterEngineContext {
-    _unsync: PhantomUnsync,
-    _unsend: PhantomUnsend,
+#[derive(Debug)]
+pub enum Error {
+    InvalidHandle,
 }
 
-pub type LPCSTR = *const i8;
-pub type HINSTANCE = isize;
-pub type HMODULE = isize;
+impl Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Error::InvalidHandle => write!(f, "invalid engine handle"),
+        }
+    }
+}
+
+impl std::error::Error for Error {}
+
+pub struct PlatformContext {}
+
+type LPCSTR = *const i8;
+type HINSTANCE = isize;
+type HMODULE = isize;
+type HWND = isize;
 
 #[link(name = "kernel32")]
 extern "system" {
@@ -24,19 +34,20 @@ extern "system" {
     pub fn GetProcAddress(hModule: HMODULE, lpProcName: LPCSTR) -> *mut c_void;
 }
 
-pub type FlutterDesktopTextureRegistrarRef = *mut c_void;
-pub type FlutterDesktopMessengerRef = *mut c_void;
+pub(crate) type FlutterView = HWND;
+pub(crate) type FlutterTextureRegistry = FlutterDesktopTextureRegistrarRef;
+pub(crate) type FlutterBinaryMessenger = FlutterDesktopMessengerRef;
+
+type FlutterDesktopTextureRegistrarRef = *mut c_void;
+type FlutterDesktopMessengerRef = *mut c_void;
 
 type GetFlutterViewProc = unsafe extern "C" fn(i64) -> isize;
 type GetTextureRegistrarProc = unsafe extern "C" fn(i64) -> FlutterDesktopTextureRegistrarRef;
 type GetMessengerProc = unsafe extern "C" fn(i64) -> FlutterDesktopMessengerRef;
 
-impl FlutterEngineContext {
+impl PlatformContext {
     pub fn new() -> Self {
-        Self {
-            _unsync: PhantomData,
-            _unsend: PhantomData,
-        }
+        Self {}
     }
 
     fn get_proc(name: &str) -> *mut c_void {
@@ -47,10 +58,15 @@ impl FlutterEngineContext {
         proc
     }
 
-    pub fn get_flutter_view(&self, handle: i64) -> FlutterEngineContextResult<isize> {
+    pub fn get_flutter_view(&self, handle: i64) -> FlutterEngineContextResult<HWND> {
         let proc = Self::get_proc("FlutterEngineContextGetFlutterView");
         let proc: GetFlutterViewProc = unsafe { transmute(proc) };
-        Ok(unsafe { proc(handle) })
+        let view = unsafe { proc(handle) };
+        if view == 0 {
+            Err(Error::InvalidHandle)
+        } else {
+            Ok(view)
+        }
     }
 
     pub fn get_texture_registry(
@@ -59,7 +75,12 @@ impl FlutterEngineContext {
     ) -> FlutterEngineContextResult<FlutterDesktopTextureRegistrarRef> {
         let proc = Self::get_proc("FlutterEngineContextGetTextureRegistrar");
         let proc: GetTextureRegistrarProc = unsafe { transmute(proc) };
-        Ok(unsafe { proc(handle) })
+        let registry = unsafe { proc(handle) };
+        if registry.is_null() {
+            Err(Error::InvalidHandle)
+        } else {
+            Ok(registry)
+        }
     }
 
     pub fn get_binary_messenger(
@@ -68,6 +89,11 @@ impl FlutterEngineContext {
     ) -> FlutterEngineContextResult<FlutterDesktopMessengerRef> {
         let proc = Self::get_proc("FlutterEngineContextGetBinaryMessenger");
         let proc: GetMessengerProc = unsafe { transmute(proc) };
-        Ok(unsafe { proc(handle) })
+        let messenger = unsafe { proc(handle) };
+        if messenger.is_null() {
+            Err(Error::InvalidHandle)
+        } else {
+            Ok(messenger)
+        }
     }
 }
