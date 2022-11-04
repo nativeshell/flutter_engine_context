@@ -23,9 +23,13 @@ impl std::error::Error for Error {}
 
 pub struct PlatformContext {}
 
+#[allow(clippy::upper_case_acronyms)]
 type LPCSTR = *const i8;
+#[allow(clippy::upper_case_acronyms)]
 type HINSTANCE = isize;
+#[allow(clippy::upper_case_acronyms)]
 type HMODULE = isize;
+#[allow(clippy::upper_case_acronyms)]
 type HWND = isize;
 
 #[link(name = "kernel32")]
@@ -54,8 +58,7 @@ impl PlatformContext {
         let module_name = CString::new("flutter_engine_context_plugin.dll").unwrap();
         let module = unsafe { GetModuleHandleA(module_name.as_ptr()) };
         let proc_name = CString::new(name).unwrap();
-        let proc = unsafe { GetProcAddress(module, proc_name.as_ptr()) };
-        proc
+        unsafe { GetProcAddress(module, proc_name.as_ptr()) }
     }
 
     pub fn get_flutter_view(&self, handle: i64) -> FlutterEngineContextResult<HWND> {
