@@ -23,9 +23,13 @@ impl std::error::Error for Error {}
 
 pub struct PlatformContext {}
 
+#[allow(clippy::upper_case_acronyms)]
 type LPCSTR = *const i8;
+#[allow(clippy::upper_case_acronyms)]
 type HINSTANCE = isize;
+#[allow(clippy::upper_case_acronyms)]
 type HMODULE = isize;
+#[allow(clippy::upper_case_acronyms)]
 type HWND = isize;
 
 #[link(name = "kernel32")]
